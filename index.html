@@ -1,1 +1,312 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TweenCraft 3D Tamil Cinema Studio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #0b111e; color: #f3f4f6; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* டாப் பார் */
+        header { background: #111827; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1f2937; }
+        .logo { font-size: 20px; font-weight: bold; color: #38bdf8; }
+        .export-btn { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
+        /* மெயின் லேஅவுட் */
+        .studio-container { display: flex; flex: 1; overflow: hidden; }
+
+        /* 1. இடது பேனல்: 20+ கேரக்டர்கள் மற்றும் சினிமா பின்னணிகள் */
+        .left-panel { width: 260px; background: #111827; border-right: 2px solid #1f2937; display: flex; flex-direction: column; padding: 12px; gap: 15px; overflow-y: auto; }
+        .panel-title { font-size: 12px; font-weight: bold; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; }
+        .grid-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .asset-card { background: #1f2937; border: 2px solid #374151; border-radius: 8px; padding: 6px; text-align: center; cursor: pointer; font-size: 11px; }
+        .asset-card:hover, .asset-card.active { border-color: #38bdf8; background: #0f172a; }
+        .bg-card { grid-column: span 2; }
+        .bg-card img { width: 100%; height: 60px; object-fit: cover; border-radius: 4px; }
+
+        /* 2. நடுப்பகுதி: 3D சதுர திரை & வீடியோ எடிட்டர் டைம்லைன் */
+        .main-workspace { flex: 1; background: #0b111e; display: flex; flex-direction: column; padding: 12px; gap: 12px; overflow: hidden; }
+        .screen-container { width: 100%; max-width: 400px; height: 400px; margin: 0 auto; background: #1f2937; border: 3px solid #38bdf8; border-radius: 12px; position: relative; overflow: hidden; }
+        #canvas3d { width: 100%; height: 100%; }
+
+        /* வீடியோ எடிட்டிங் டைம்லைன் பகுதி */
+        .editor-timeline { background: #111827; border: 2px solid #1f2937; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .timeline-header { display: flex; justify-content: space-between; font-size: 12px; color: #9ca3af; }
+        .track { height: 26px; background: #0b111e; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 11px; }
+        .track-label { width: 90px; font-weight: bold; color: #38bdf8; }
+        .track-bar { flex: 1; height: 10px; background: #111827; border-radius: 3px; position: relative; overflow: hidden; }
+        .track-fill { height: 100%; width: 0%; background: #6366f1; transition: width 0.1s linear; }
+
+        /* 3. வலது பேனல்: அனிமேஷன் ஆக்ஷன்கள் & எடிட்டிங் ஸ்லைடர்கள் */
+        .right-panel { width: 260px; background: #111827; border-left: 2px solid #1f2937; padding: 12px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        .btn { background: #374151; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; width: 100%; text-align: center; margin-bottom: 4px; }
+        .btn:hover, .btn.active { background: #38bdf8; color: #111827; }
+        .slider-group { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #9ca3af; }
+
+        .text-row { display: flex; gap: 6px; align-items: center; margin-top: 5px; }
+        .text-input { background: #0b111e; color: white; border: 1px solid #374151; padding: 10px; border-radius: 6px; flex: 1; font-size: 13px; outline: none; }
+        .btn-play { background: #6366f1; width: auto; padding: 10px 15px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">🎬 TweenCraft 3D Studio Pro</div>
+        <button class="export-btn" onclick="alert('வீடியோ எடிட்டிங் முடிந்து எக்ஸ்போர்ட் செய்யப்படுகிறது...')">📤 Export Video</button>
+    </header>
+
+    <div class="studio-container">
+        
+        <div class="left-panel">
+            <div class="panel-title">👥 3D மனித கேரக்டர்கள் (20+)</div>
+            <div class="grid-list" id="charList">
+                </div>
+
+            <div class="panel-title">🏡 சினிமா பின்னணிகள்</div>
+            <div class="grid-list">
+                <div class="asset-card bg-card" onclick="changeStudioBg('https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=600')">
+                    <div class="asset-name">🌾 பசுமை கிராமம் (Village)</div>
+                </div>
+                <div class="asset-card bg-card" onclick="changeStudioBg('https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=600')">
+                    <div class="asset-name">🛣️ நெடுஞ்சாலை ரோடு (Highway Road)</div>
+                </div>
+                <div class="asset-card bg-card" onclick="changeStudioBg('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=600')">
+                    <div class="asset-name">🏢 மாடர்ன் ஆபீஸ் (Office Room)</div>
+                </div>
+                <div class="asset-card bg-card" onclick="changeStudioBg('https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=600')">
+                    <div class="asset-name">🍳 சமையலறை (Kitchen)</div>
+                </div>
+                <div class="asset-card bg-card" onclick="changeStudioBg('https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=600')">
+                    <div class="asset-name">🛏️ படுக்கையறை (Bedroom)</div>
+                </div>
+                <div class="asset-card bg-card" onclick="changeStudioBg('https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?q=80&w=600')">
+                    <div class="asset-name">🍽️ சாப்பாட்டு அறை (Dining)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-workspace">
+            <div class="screen-container" id="screenBox">
+                <div id="canvas3d"></div>
+            </div>
+            
+            <div class="text-row">
+                <input type="text" id="speechText" class="text-input" value="அண்ணே! இப்போ நிஜ 3D மனித கேரக்டரும், நீங்க கேட்ட கிராமம், ஆபீஸ் பின்னணியும் ரெடி!">
+                <button class="btn btn-play" onclick="speakAndAnimate3D()">▶ பிளே & எடிட்</button>
+            </div>
+
+            <div class="editor-timeline">
+                <div class="timeline-header"><span>🎞️ வீடியோ எடிட்டிங் டைம்லைன் டிராக்</span><span>00:00 / 00:10</span></div>
+                <div class="track">
+                    <span class="track-label">🎬 Video Cut</span>
+                    <div class="track-bar"><div id="tVideo" class="track-fill"></div></div>
+                </div>
+                <div class="track">
+                    <span class="track-label">🎙️ Voice Over</span>
+                    <div class="track-bar"><div id="tAudio" class="track-fill" style="background:#f59e0b;"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="panel-title">🔎 கேரக்டர் எடிட்டிங் (Zoom)</div>
+            <div class="slider-group">
+                <label>கேரக்டர் அளவு (Scale):</label>
+                <input type="range" id="scaleSlider" min="0.5" max="2" step="0.1" value="1" oninput="adjust3DCharacter()">
+            </div>
+            <div class="slider-group">
+                <label>இடப்பக்கம்/வலப்பக்கம் நகர்த்த:</label>
+                <input type="range" id="posSlider" min="-3" max="3" step="0.2" value="0" oninput="adjust3DCharacter()">
+            </div>
+
+            <hr style="border-color:#1f2937;">
+
+            <div class="panel-title">🎭 முக பாவனைகள் & நிறம்</div>
+            <button class="btn" onclick="change3DColor(0xff4757)">😡 கோபம் (சிவப்பு சட்டை)</button>
+            <button class="btn" onclick="change3DColor(0x2ed573)">😀 மகிழ்ச்சி (பச்சை சட்டை)</button>
+            <button class="btn" onclick="change3DColor(0x1e90ff)">😲 ஆச்சரியம் (நீல சட்டை)</button>
+
+            <hr style="border-color:#1f2937;">
+
+            <div class="panel-title">🏃 சினிமா ஆக்ஷன்கள் (Actions)</div>
+            <button class="btn" onclick="trigger3DAction('wave')">👋 கையைத் தூக்கி அசை</button>
+            <button class="btn" onclick="trigger3DAction('walk')">🚶 முன்னோக்கி நட</button>
+            <button class="btn" onclick="trigger3DAction('stop')" style="background:#ef4444;">⏹ அசைவை நிறுத்து</button>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, humanBody, leftArm, rightArm;
+        let isWalking = false, isWaving = false, isTalking = false;
+        let clock = new THREE.Clock();
+        let synth = window.speechSynthesis;
+        let timelineInterval;
+
+        // 🎬 Three.js மூலம் நிஜ 3D மனித உருவத்தை உருவாக்கும் தொழில்நுட்பம்
+        function init3DStudio() {
+            const container = document.getElementById('canvas3d');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xbae6fd); // ஆரம்ப ஸ்கை ப்ளூ பேக்ரவுண்ட்
+
+            camera = new THREE.Camera(); // Orthographic/Perspective கச்சிதமான கேமரா
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 1.5, 4);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            // வெளிச்சம் (Lights)
+            const light = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(light);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(5, 10, 5);
+            scene.add(dirLight);
+
+            // 👥 மனித உடலமைப்பு உருவாக்கம் (Human Body Model Layers)
+            humanBody = new THREE.Group();
+
+            // 1. முகம் (Head)
+            const headGeo = new THREE.SphereGeometry(0.3, 32, 32);
+            const headMat = new THREE.MeshLambertMaterial({ color: #ffdbac });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.2;
+            humanBody.add(head);
+
+            // 2. சட்டை/உடல் (Shirt/Torso)
+            const shirtGeo = new THREE.CylinderGeometry(0.3, 0.2, 0.8, 32);
+            const shirtMat = new THREE.MeshLambertMaterial({ color: 0xff4757 });
+            const shirt = new THREE.Mesh(shirtGeo, shirtMat);
+            shirt.position.y = 0.5;
+            shirt.name = "shirt";
+            humanBody.add(shirt);
+
+            // 3. இடது கை (Left Arm)
+            const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 16);
+            leftArm = new THREE.Mesh(armGeo, headMat);
+            leftArm.position.set(-0.4, 0.6, 0);
+            humanBody.add(leftArm);
+
+            // 4. வலது கை (Right Arm)
+            rightArm = new THREE.Mesh(armGeo, headMat);
+            rightArm.position.set(0.4, 0.6, 0);
+            humanBody.add(rightArm);
+
+            scene.add(humanBody);
+            animate3DLoop();
+        }
+
+        // 🔄 3D அனிமேஷன் லூப் இயக்கம் (Real-time Rendering)
+        function animate3DLoop() {
+            requestAnimationFrame(animate3DLoop);
+            let time = clock.getElapsedTime();
+
+            // நடக்கும் அசைவு லாஜிக்
+            if (isWalking) {
+                humanBody.position.x = Math.sin(time * 2) * 0.5;
+                leftArm.rotation.z = Math.sin(time * 5) * 0.5;
+                rightArm.rotation.z = -Math.sin(time * 5) * 0.5;
+            }
+            // கையாட்டும் அசைவு லாஜிக்
+            if (isWaving) {
+                rightArm.rotation.z = Math.sin(time * 8) * 0.8 + 1;
+            }
+            // பேசும் அசைவு லாஜிக்
+            if (isTalking) {
+                humanBody.scale.y = 1 + Math.sin(time * 15) * 0.03;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // 🏃 ஆக்ஷன்களை இயக்குதல்
+        function trigger3DAction(act) {
+            isWalking = (act === 'walk');
+            isWaving = (act === 'wave');
+            if (act === 'stop') {
+                isWalking = false; isWaving = false;
+                leftArm.rotation.set(0,0,0); rightArm.rotation.set(0,0,0);
+            }
+        }
+
+        // 🎨 முக பாவனைக்கு ஏற்ப சட்டையின் நிறத்தை மாற்றுதல்
+        function change3DColor(hexColor) {
+            humanBody.children.forEach(child => {
+                if(child.name === "shirt") child.material.color.setHex(hexColor);
+            });
+        }
+
+        // 🔎 கேரக்டரைச் சின்னது/பெருசு மற்றும் நகர்த்தும் வசதி
+        function adjust3DCharacter() {
+            const scale = document.getElementById('scaleSlider').value;
+            const posX = document.getElementById('posSlider').value;
+            humanBody.scale.set(scale, scale, scale);
+            humanBody.position.x = posX;
+        }
+
+        // 🏡 பின்னணி புகைப்படத்தை மாற்றுதல்
+        function changeStudioBg(imgUrl) {
+            document.getElementById('screenBox').style.background = `url('${imgUrl}') center/cover`;
+            document.getElementById('canvas3d').style.opacity = "0.9";
+        }
+
+        // 🎙️ வீடியோ எடிட்டிங் டைம்லைன் மற்றும் பேச்சு ஒத்திசைவு
+        function speakAndAnimate3D() {
+            synth.cancel();
+            clearInterval(timelineInterval);
+            const text = document.getElementById('speechText').value;
+            if(!text) return;
+
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ta-IN';
+
+            let progress = 0;
+            utterance.onstart = () => {
+                isTalking = true;
+                timelineInterval = setInterval(() => {
+                    if (progress < 100) {
+                        progress += 5;
+                        document.getElementById('tVideo').style.width = progress + '%';
+                        document.getElementById('tAudio').style.width = progress + '%';
+                    }
+                }, 100);
+            };
+
+            utterance.onend = () => {
+                isTalking = false;
+                humanBody.scale.set(1,1,1);
+                clearInterval(timelineInterval);
+                document.getElementById('tVideo').style.width = '0%';
+                document.getElementById('tAudio').style.width = '0%';
+            };
+
+            synth.speak(utterance);
+        }
+
+        // 20 கேரக்டர்களின் தேர்வுப் பட்டியலை உருவாக்குதல்
+        function load20Characters() {
+            const list = document.getElementById('charList');
+            for(let i=1; i<=20; i++) {
+                let card = document.createElement('div');
+                card.className = "asset-card";
+                card.innerHTML = `👤 மனிதன் மாடல் ${i}`;
+                card.onclick = () => {
+                    document.querySelectorAll('.asset-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    // இங்கு கேரக்டர் மாறும்போது 3D மாடலின் நிறத்தை ரேண்டமாக மாற்றலாம்
+                    change3DColor(Math.random() * 0xffffff);
+                };
+                list.appendChild(card);
+            }
+        }
+
+        // துவக்கம்
+        window.onload = () => {
+            init3DStudio();
+            load20Characters();
+        };
+    </script>
+</body>
+</html>
